@@ -1,10 +1,11 @@
-import React from "react";
-import SchedulerComponent from "./components/Scheduler/Scheduler";
+import React, { useEffect, useState } from "react";
+import Home from "./components/pages/Home/Home";
 
 const App = () => {
+  console.log("env", process.env.NODE_ENV);
   return (
     <>
-      <SchedulerComponent />
+      <Home />
     </>
   );
 };

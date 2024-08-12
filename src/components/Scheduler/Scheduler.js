@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Paper from "@mui/material/Paper";
 import {
   Scheduler,
@@ -17,40 +18,43 @@ import {
   IntegratedEditing,
   ViewState,
 } from "@devexpress/dx-react-scheduler";
+import {
+  addEvent,
+  updateEvent,
+  deleteEvent,
+  getAllEvents,
+} from "../../redux/eventRedux";
+import style from "./Sheluder.module.scss";
 
 const SchedulerComponent = () => {
-  const [events, setEvents] = useState([]);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const dispatch = useDispatch();
+  const events = useSelector(getAllEvents);
+  const [currentDate, setCurrentDate] = React.useState(new Date());
+  console.log("events", events);
 
-  const commitChanges = ({ added, changed, deleted }) => {
-    let updatedEvents = [...events];
-
+  const commitChanges = async ({ added, changed, deleted }) => {
     if (added) {
-      const startingAddedId =
-        events.length > 0 ? events[events.length - 1].id + 1 : 0;
-      updatedEvents = [...updatedEvents, { id: startingAddedId, ...added }];
-      console.log("Added Event:", { id: startingAddedId, ...added });
+      const newEvent = { ...added };
+      dispatch(addEvent(newEvent));
+      console.log("add", newEvent);
     }
 
     if (changed) {
-      updatedEvents = updatedEvents.map((event) =>
-        changed[event.id] ? { ...event, ...changed[event.id] } : event
-      );
-      console.log("Changed Event:", changed);
+      Object.keys(changed).forEach((id) => {
+        dispatch(updateEvent({ id, ...changed[id] }));
+      });
+      console.log("change", changed);
     }
 
     if (deleted !== undefined) {
-      updatedEvents = updatedEvents.filter((event) => event.id !== deleted);
-      console.log("Deleted Event ID:", deleted);
+      dispatch(deleteEvent(deleted));
+      console.log("delete", deleted);
     }
-
-    setEvents(updatedEvents);
-    console.log("Updated Events:", updatedEvents);
   };
 
   return (
-    <Paper>
-      <Scheduler data={events} locale="pl-PL">
+    <Paper className={style.paper}>
+      <Scheduler data={Array.isArray(events) ? events : []} locale="pl-PL">
         <ViewState
           currentDate={currentDate}
           onCurrentDateChange={setCurrentDate}
