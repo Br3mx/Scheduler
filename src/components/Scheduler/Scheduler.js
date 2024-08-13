@@ -23,7 +23,7 @@ import {
   updateEvent,
   deleteEvent,
   getAllEvents,
-  fetchEventsFromFirebase,
+  fetchEvents,
 } from "../../redux/eventRedux";
 import style from "./Sheluder.module.scss";
 
@@ -34,19 +34,18 @@ const SchedulerComponent = () => {
   console.log("events", events);
 
   useEffect(() => {
-    dispatch(fetchEventsFromFirebase());
+    dispatch(fetchEvents());
   }, [dispatch]);
 
-  const commitChanges = async ({ added, changed, deleted }) => {
+  const commitChanges = ({ added, changed, deleted }) => {
     if (added) {
-      const newEvent = { ...added };
-      dispatch(addEvent(newEvent));
-      console.log("add", newEvent);
+      dispatch(addEvent(added));
+      console.log("add", added);
     }
 
     if (changed) {
       Object.keys(changed).forEach((id) => {
-        dispatch(updateEvent({ id, ...changed[id] }));
+        dispatch(updateEvent(id, changed[id]));
       });
       console.log("change", changed);
     }

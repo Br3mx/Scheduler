@@ -1,7 +1,8 @@
 import { createStore, applyMiddleware, combineReducers, compose } from "redux";
 import thunk from "redux-thunk";
-import initialState from "./initialState.js";
-import eventReducer from "./eventRedux.js";
+import initialState from "./initialState";
+import eventReducer from "./eventRedux";
+
 const subreducers = {
   data: eventReducer,
 };

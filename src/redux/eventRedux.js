@@ -1,7 +1,15 @@
-import { ref, push, update, remove, onValue } from "firebase/database";
-import initialState from "./initialState";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../firebase/firebase";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  updateDoc,
+} from "firebase/firestore";
+import initialState from "./initialState";
+
 // selectors
 export const getAllEvents = (state) => state.data.events;
 const createActionName = (name) => `app/events/${name}`;
@@ -13,61 +21,67 @@ export const SET_EVENTS = createActionName("SET_EVENTS");
 
 // Action creators
 export const addEvent = (event) => async (dispatch) => {
-  const newEventRef = push(ref(db, "events/"));
-  const eventId = newEventRef.key;
-  const newEvent = { id: eventId, ...event };
-  await update(newEventRef, newEvent);
-  dispatch({
-    type: ADD_EVENT,
-    payload: newEvent,
-  });
+  try {
+    const docRef = await addDoc(collection(db, "events"), event);
+    dispatch({
+      type: ADD_EVENT,
+      payload: { id: docRef.id, ...event },
+    });
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
 };
 
-export const updateEvent = (event) => async (dispatch) => {
-  const eventRef = ref(db, `events/${event.id}`);
-  await update(eventRef, event);
-  dispatch({
-    type: UPDATE_EVENT,
-    payload: event,
-  });
+export const updateEvent = (id, updatedEvent) => async (dispatch) => {
+  const eventRef = doc(db, "events", id);
+  try {
+    await updateDoc(eventRef, updatedEvent);
+    dispatch({
+      type: UPDATE_EVENT,
+      payload: { id, ...updatedEvent },
+    });
+  } catch (e) {
+    console.error("Error updating document: ", e);
+  }
 };
 
-export const deleteEvent = (eventId) => async (dispatch) => {
-  const eventRef = ref(db, `events/${eventId}`);
-  await remove(eventRef);
-  dispatch({
-    type: DELETE_EVENT,
-    payload: eventId,
-  });
+export const deleteEvent = (id) => async (dispatch) => {
+  const eventRef = doc(db, "events", id);
+  try {
+    await deleteDoc(eventRef);
+    dispatch({
+      type: DELETE_EVENT,
+      payload: id,
+    });
+  } catch (e) {
+    console.error("Error deleting document: ", e);
+  }
 };
 
-// Pobieranie wszystkich wydarzeń z Firebase
-export const fetchEventsFromFirebase = () => (dispatch) => {
-  const eventsRef = ref(db, "events/");
-  onValue(eventsRef, (snapshot) => {
-    const events = snapshot.val();
-    const eventsArray = events
-      ? Object.keys(events).map((key) => ({ id: key, ...events[key] }))
-      : [];
+// Fetching events from Firestore
+export const fetchEvents = () => async (dispatch) => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "events"));
+    const events = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     dispatch({
       type: SET_EVENTS,
-      payload: eventsArray,
+      payload: events,
     });
-  });
+  } catch (e) {
+    console.error("Error fetching documents: ", e);
+  }
 };
-// reducer
+
+// Reducer
 export default function reducer(state = initialState, action = {}) {
   switch (action.type) {
     case ADD_EVENT:
       return {
         ...state,
-        events: [
-          ...state.events,
-          {
-            ...action.payload,
-            id: action.payload.id || uuidv4(), // Dodaj UUID tylko wtedy, gdy id nie jest przekazane
-          },
-        ],
+        events: [...state.events, action.payload],
       };
     case UPDATE_EVENT:
       return {
@@ -82,6 +96,11 @@ export default function reducer(state = initialState, action = {}) {
       return {
         ...state,
         events: state.events.filter((event) => event.id !== action.payload),
+      };
+    case SET_EVENTS:
+      return {
+        ...state,
+        events: action.payload,
       };
     default:
       return state;
