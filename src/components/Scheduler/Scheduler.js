@@ -23,6 +23,7 @@ import {
   updateEvent,
   deleteEvent,
   getAllEvents,
+  fetchEventsFromFirebase,
 } from "../../redux/eventRedux";
 import style from "./Sheluder.module.scss";
 
@@ -31,6 +32,10 @@ const SchedulerComponent = () => {
   const events = useSelector(getAllEvents);
   const [currentDate, setCurrentDate] = React.useState(new Date());
   console.log("events", events);
+
+  useEffect(() => {
+    dispatch(fetchEventsFromFirebase());
+  }, [dispatch]);
 
   const commitChanges = async ({ added, changed, deleted }) => {
     if (added) {
